@@ -1,0 +1,8 @@
+1.cpp
+*.o
+2.cpp
+a.out
+src/a.out
+relic/*
+*.swp
+src/a.out.dSYM/
