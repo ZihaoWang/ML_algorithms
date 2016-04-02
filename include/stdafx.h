@@ -55,14 +55,4 @@ typedef arma::field<arma::field<mat_t>> f_mf_t;
                ("\nline: ") + (string(std::to_string(__LINE__))) + \
                ("\nwith message: " #expr "\n")))
 
-inline void check_vector(const vector<int> &vec, const int true_size)
-{
-    if (vec.size() != true_size)
-        CRY();
-    else
-        for (const auto e : vec)
-            if (e <= 0)
-                CRY();
-}
-
 #endif
