@@ -5,7 +5,6 @@
 #include "./prepare_data.h"
 #include "./activation_function.h"
 #include "./classifier.h"
-#include "./clustering.h"
 #include "./field_algorithm.h"
 #include "./optimization.h"
 

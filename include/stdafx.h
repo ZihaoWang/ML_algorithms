@@ -26,6 +26,7 @@
 
 #include <armadillo> // matrix lib
 
+using std::size_t;
 using std::cout;
 using std::endl;
 using std::string;
@@ -33,21 +34,25 @@ using std::vector;
 using std::pair;
 using std::shared_ptr;
 using std::unique_ptr;
+using std::numeric_limits;
 using std::make_shared;
 using std::make_unique;
 using std::make_pair;
+using std::move;
 using std::runtime_error;
 using std::logic_error;
 
-typedef arma::mat mat_t;
-typedef arma::imat imat_t;
 typedef arma::vec vec_t;
 typedef arma::ivec ivec_t;
 typedef arma::rowvec rvec_t;
+typedef arma::mat mat_t;
+typedef arma::imat imat_t;
 typedef arma::cube cube_t;
 typedef arma::icube icube_t;
 typedef arma::field<mat_t> mf_t;
 typedef arma::field<arma::field<mat_t>> f_mf_t;
+typedef arma::field<cube_t> cf_t;
+typedef arma::field<arma::field<cube_t>> f_cf_t;
 
 #define CRY(expr) \
 (throw runtime_error(("\nexception has been caught at file: ") + (string(__FILE__)) + \

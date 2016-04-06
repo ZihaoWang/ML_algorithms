@@ -16,7 +16,7 @@ class ker_base
 {
     public :
         ker_base() {}
-        virtual ~ker_base() {};
+        virtual ~ker_base() {}
         virtual void comp_ker(mat_t *dst, const mat_t &lhs, const mat_t &rhs) = 0;
 };
 
