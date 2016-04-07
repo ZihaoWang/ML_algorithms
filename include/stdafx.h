@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <stack>
 #include <map>
 #include <unordered_map>
 #include <iterator>
