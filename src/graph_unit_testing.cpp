@@ -1,8 +1,9 @@
 #include "../include/graph.h"
+#include "../include/probabilistic_graphical_model.h"
 
 int main()
 {
-    unique_ptr<graph::ud_graph<string, string>> udg = make_unique<graph::ud_graph<string, string>>();
+    unique_ptr<pgm::mrf<string, string>> udg = make_unique<pgm::mrf<string, string>>();
     size_t last;
     size_t now;
     size_t node1;
