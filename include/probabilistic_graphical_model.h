@@ -6,6 +6,8 @@
 namespace pgm
 {
 
+using namespace graph;
+
 struct var_node
 {
 };

@@ -1,11 +1,7 @@
-#include "../include/stdafx.h"
 #include "../include/linear_search.h"
 #include "../include/optimization.h"
 
-#define UNIT_TESTING
 #define VECTOR
-
-#ifdef UNIT_TESTING
 
 int main()
 {
@@ -54,6 +50,3 @@ int main()
 
     return 0;
 }
-
-#endif
-
