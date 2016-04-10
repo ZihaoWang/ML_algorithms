@@ -14,22 +14,24 @@ using std::priority_queue;
 
 // directed graph
 
+template <typename EDGE_INFO_T = string> struct d_edge;
+
+template <typename VERTEX_INFO_T = string, typename EDGE_INFO_T = string>
+struct d_vertex
+{
+};
+
 template <typename EDGE_INFO_T>
 struct d_edge
 {
     unique_ptr<EDGE_INFO_T> info;
 };
 
-template <typename NODE_INFO_T, typename EDGE_INFO_T>
-struct d_node
-{
-};
-
-template <typename NODE_INFO_T, typename EDGE_INFO_T>
+template <typename VERTEX_T = d_vertex<>, typename EDGE_T = d_edge<>>
 class d_graph
 {
     public :
-        void add_node();
+        void add_vertex();
 
 
     private :
@@ -40,165 +42,174 @@ class d_graph
 /*
  * for undirected graph, EDGE_INGO_T should offer valid copy-constructor
  */
+template <typename EDGE_INFO_T = string> struct ud_edge;
+
+template <typename VERTEX_INFO_T = string, typename EDGE_T = ud_edge<>>
+struct ud_vertex
+{
+    ud_vertex(VERTEX_INFO_T *info) :
+        visited(false), weight(0.0), index(numeric_limits<size_t>::max()), info(info) {}
+
+    ud_vertex(const double weight, VERTEX_INFO_T *info) :
+        visited(false), weight(weight), index(numeric_limits<size_t>::max()), info(info) {}
+
+    bool visited;
+    size_t index;
+    double weight;
+    unique_ptr<VERTEX_INFO_T> info;
+    vector<unique_ptr<EDGE_T>> edge;
+};
+
 template <typename EDGE_INFO_T>
 struct ud_edge
 {
-    ud_edge(const size_t idx_node, const double weight, EDGE_INFO_T *info) :
-        idx_node(idx_node), weight(weight), info(info) {}
+    ud_edge(const size_t vertex_now, const size_t vertex_next, EDGE_INFO_T *info) :
+        visited(false), weight(0.0), vertex_now(vertex_now), vertex_next(vertex_next), info(info) {}
     
-    ud_edge(ud_edge &&old) noexcept :
-        idx_node(old.idx_node), weight(old.weight), info(move(old.info)) {}
-
-    size_t idx_node;
-    double weight;
-    unique_ptr<EDGE_INFO_T> info;
-};
-
-template <typename NODE_INFO_T, typename EDGE_INFO_T>
-struct ud_node
-{
-    ud_node(const double weight, NODE_INFO_T *info) :
-        visited(false), weight(weight), info(info) {}
-
-    ud_node(ud_node &&old) noexcept :
-        visited(old.visited), weight(old.weight), info(move(old.info)), edge(move(old.edge)) {}
+    ud_edge(const double weight, const size_t vertex_now, const size_t vertex_next, EDGE_INFO_T *info) :
+        visited(false), weight(weight), vertex_now(vertex_now), vertex_next(vertex_next), info(info) {}
+    
+    ud_edge(const ud_edge &o) :
+        visited(false), weight(o.weight), vertex_now(o.vertex_next), vertex_next(o.vertex_now),
+        info(new EDGE_INFO_T(*o.info)) {}
 
     bool visited;
     double weight;
-    unique_ptr<NODE_INFO_T> info;
-    vector<ud_edge<EDGE_INFO_T>> edge;
+    size_t vertex_now;
+    size_t vertex_next;
+    unique_ptr<EDGE_INFO_T> info;
 };
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
+template<typename VERTEX_T = ud_vertex<>, typename EDGE_T = ud_edge<>>
 class ud_graph
 {
     public :
         ud_graph() :
             has_weight(false) {}
 
-        size_t add_node(NODE_INFO_T *info = nullptr, const double weight = 0.0) 
+        size_t add_vertex(VERTEX_T *vertex) 
         { 
-            if (std::abs(weight) > numeric_limits<double>::epsilon())
+            if (std::abs(vertex->weight) > numeric_limits<double>::epsilon())
                 has_weight = true;
-            nodes.emplace_back(weight, info);
-            return nodes.size() - 1;
+            vertex->index = vertices.size();
+            vertices.emplace_back(vertex);
+            return vertices.size() - 1;
         }
 
-        void add_edge(const size_t idx_node1, const size_t idx_node2, EDGE_INFO_T *info = nullptr, const double weight = 0.0);
+        void add_edge(EDGE_T *edge);
 
         /*
          * for dsf(), bfs(), is_connected()
          * FN_T should be a function whose prototype is: 
-         * bool fn(ud_node<const size_t, ud_node<NODE_INFO_T, EDGE_INFO_T>> &)
+         * bool fn(const size_t, VERTEX_T *)
          *
          * for fn():
          * if return value is true, search would terminate
-         * arg1: index of node
-         * arg2: reference of node
+         * arg1: index of vertex
+         * arg2: reference of vertex
          */
         template <typename FN_T>
-        bool dfs(const size_t idx_begin, FN_T fn);
+        bool dfs(const size_t idx_begin, FN_T fn) const;
 
         template <typename FN_T>
-        bool bfs(const size_t idx_begin, FN_T fn);
+        bool bfs(const size_t idx_begin, FN_T fn) const;
 
-        bool is_connected(const size_t idx_node1, const size_t idx_node2)
+        bool is_connected(const size_t idx_vertex1, const size_t idx_vertex2) const
         {
-            return bfs(idx_node1, [idx_node2](const size_t idx_node1, ud_node<NODE_INFO_T, EDGE_INFO_T> &node){ return idx_node1 == idx_node2 ? true : false; });
+            return bfs(idx_vertex1, [idx_vertex2](const size_t idx_vertex1, VERTEX_T *vertex){ return idx_vertex1 == idx_vertex2 ? true : false; });
         }
 
         template <typename FN_T>
-        bool is_connected(const size_t idx_node1, const size_t idx_node2, FN_T conn_pred)
+        bool is_connected(const size_t idx_vertex1, const size_t idx_vertex2, FN_T conn_pred) const
         {
-            return bfs(idx_node1, conn_pred);
+            return bfs(idx_vertex1, conn_pred);
         }
 
         // to be implemented
-        const vector<ud_edge<EDGE_INFO_T>> *dijkstra(const size_t idx_node1, const size_t idx_node2);
+        vector<unique_ptr<EDGE_T>> *dijkstra(const size_t idx_vertex1, const size_t idx_vertex2);
 
-        void print();
+        void print() const;
 
-        const auto &get_nodes() { return nodes; }
+        const auto &get_vertices() const
+        { 
+            return vertices; 
+        }
 
-    private :
+    protected :
         bool has_weight;
-        vector<ud_node<NODE_INFO_T, EDGE_INFO_T>> nodes;
-        vector<ud_edge<EDGE_INFO_T>> path;
+        vector<unique_ptr<VERTEX_T>> vertices;
+        vector<unique_ptr<EDGE_T>> path;
 };
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
-void ud_graph<NODE_INFO_T, EDGE_INFO_T>::add_edge(const size_t idx_node1, const size_t idx_node2, 
-        EDGE_INFO_T *info1, const double weight)
+template<typename VERTEX_T, typename EDGE_T>
+void ud_graph<VERTEX_T, EDGE_T>::add_edge(EDGE_T *edge)
 {
-    if (idx_node1 >= nodes.size())
+    if (edge->vertex_now >= vertices.size() || edge->vertex_next >= vertices.size())
         CRY();
-    if (idx_node2 >= nodes.size())
-        CRY();
-    EDGE_INFO_T *info2 = new EDGE_INFO_T(*info1);
-
-    if (std::abs(weight) > numeric_limits<double>::epsilon())
+    if (std::abs(edge->weight) > numeric_limits<double>::epsilon())
         has_weight = true;
-    if (nodes[idx_node1].edge.empty())
-        nodes[idx_node1].edge.emplace_back(idx_node2, weight, info1);
-    else
-        if (std::find_if(nodes[idx_node1].edge.begin(), nodes[idx_node1].edge.end(), 
-                    [idx_node1](const ud_edge<EDGE_INFO_T> &e){ return e.idx_node == idx_node1 ? true : false;})
-                == nodes[idx_node1].edge.end())
-            nodes[idx_node1].edge.emplace_back(idx_node2, weight, info1);
 
-    if (nodes[idx_node2].edge.empty())
-        nodes[idx_node2].edge.emplace_back(idx_node1, weight, info2);
+    auto &tmp = vertices[edge->vertex_now]->edge;
+    if (tmp.empty())
+    {
+        tmp.emplace_back(edge);
+        vertices[edge->vertex_next]->edge.emplace_back(new EDGE_T(*edge));
+    }
     else
-        if (std::find_if(nodes[idx_node2].edge.begin(), nodes[idx_node2].edge.end(), 
-                    [idx_node2](const ud_edge<EDGE_INFO_T> &e){ return e.idx_node == idx_node2 ? true : false;})
-                == nodes[idx_node2].edge.end())
-            nodes[idx_node2].edge.emplace_back(idx_node1, weight, info2);
+    {
+        bool edge_existed = std::find_if(tmp.begin(), tmp.end(), [&edge](const unique_ptr<EDGE_T> &e){ return e->vertex_next == edge->vertex_next; }) != tmp.end();
+        if (!edge_existed)
+        {
+            tmp.emplace_back(edge);
+            vertices[edge->vertex_next]->edge.emplace_back(new EDGE_T(*edge));
+        }
+    }
 }
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
+template<typename VERTEX_T, typename EDGE_T>
 template <typename FN_T>
-bool ud_graph<NODE_INFO_T, EDGE_INFO_T>::dfs(const size_t idx_begin, FN_T fn)
+bool ud_graph<VERTEX_T, EDGE_T>::dfs(const size_t idx_begin, FN_T fn) const
 {
-    if (idx_begin < 0 || idx_begin >= nodes.size())
+    if (idx_begin < 0 || idx_begin >= vertices.size())
         CRY();
 
     stack<pair<size_t, size_t>> stk;
-    if (fn(idx_begin, nodes[idx_begin]))
+    if (fn(idx_begin, vertices[idx_begin].get()))
         return true;
-    nodes[idx_begin].visited = true;
+    vertices[idx_begin]->visited = true;
     stk.push(make_pair(idx_begin, 0));
 
     while (!stk.empty())
     {
-        auto &node_now = nodes[stk.top().first];
+        auto &vertex_now = *vertices[stk.top().first];
         size_t idx_edge = stk.top().second;
-        for (; idx_edge < node_now.edge.size(); ++idx_edge)
+        for (; idx_edge < vertex_now.edge.size(); ++idx_edge)
         {
-            size_t idx_next = node_now.edge[idx_edge].idx_node;
-            if (!nodes[idx_next].visited)
+            size_t idx_next = vertex_now.edge[idx_edge]->vertex_next;
+            if (!vertices[idx_next]->visited)
             {
-                if (fn(idx_next, nodes[idx_next]))
+                if (fn(idx_next, vertices[idx_next].get()))
                     return true;
-                nodes[idx_next].visited = true;
+                vertices[idx_next]->visited = true;
                 stk.top().second = idx_edge + 1;
                 stk.push(make_pair(idx_next, 0));
                 break;
             }
         }
-        if (idx_edge >= node_now.edge.size())
+        if (idx_edge >= vertex_now.edge.size())
             stk.pop();
     }
 
-    for (auto &e : nodes)
-        e.visited = false;
+    for (const auto &e : vertices)
+        e->visited = false;
     return false;
 }
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
+template<typename VERTEX_T, typename EDGE_T>
 template <typename FN_T>
-bool ud_graph<NODE_INFO_T, EDGE_INFO_T>::bfs(const size_t idx_begin, FN_T fn)
+bool ud_graph<VERTEX_T, EDGE_T>::bfs(const size_t idx_begin, FN_T fn) const
 {
-    if (idx_begin < 0 || idx_begin >= nodes.size())
+    if (idx_begin < 0 || idx_begin >= vertices.size())
         CRY();
 
     queue<size_t> que;
@@ -206,39 +217,39 @@ bool ud_graph<NODE_INFO_T, EDGE_INFO_T>::bfs(const size_t idx_begin, FN_T fn)
     while (!que.empty())
     {
         size_t idx_now = que.front();
-        auto &node_now = nodes[idx_now];
+        auto &vertex_now = *vertices[idx_now];
         que.pop();
-        if (fn(idx_now, node_now))
+        if (fn(idx_now, vertices[idx_now].get()))
             return true;
-        nodes[idx_now].visited = true;
+        vertices[idx_now]->visited = true;
 
-        for (const auto &e : node_now.edge)
-            if (!nodes[e.idx_node].visited)
-                que.push(e.idx_node);
+        for (const auto &e : vertex_now.edge)
+            if (!vertices[e->vertex_next]->visited)
+                que.push(e->vertex_next);
     }
 
-    for (auto &e : nodes)
-        e.visited = false;
+    for (const auto &e : vertices)
+        e->visited = false;
     return false;
 }
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
-const vector<ud_edge<EDGE_INFO_T>> *ud_graph<NODE_INFO_T, EDGE_INFO_T>::dijkstra(const size_t idx_node1, const size_t idx_node2)
+template<typename VERTEX_T, typename EDGE_T>
+vector<unique_ptr<EDGE_T>> *ud_graph<VERTEX_T, EDGE_T>::dijkstra(const size_t idx_vertex1, const size_t idx_vertex2)
 {
     path.clear();
 
     return path;
 }
 
-template<typename NODE_INFO_T, typename EDGE_INFO_T>
-void ud_graph<NODE_INFO_T, EDGE_INFO_T>::print()
+template<typename VERTEX_T, typename EDGE_T>
+void ud_graph<VERTEX_T, EDGE_T>::print() const
 {
-    for (int i = 0; i < nodes.size(); ++i)
+    for (int i = 0; i < vertices.size(); ++i)
     {
-        cout << "node " << i << ", info: " << *nodes[i].info << endl;
+        cout << "vertex " << i << ", info: " << *vertices[i]->info << endl;
         cout << "has edges to:" << endl;
-        for (const auto &e : nodes[i].edge)
-            cout << "\tnode " << e.idx_node << ", info: " << *e.info << endl;
+        for (const auto &e : vertices[i]->edge)
+            cout << "\tto vertex: " << e->vertex_next << ", info: " << *e->info << endl;
     }
 }
 
